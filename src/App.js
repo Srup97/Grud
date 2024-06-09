@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { isEmpty } from "lodash";
 import shortid from "shortid";
 import  "./css/style.tasks.css"
+import { getCollection } from "./actions";
 
 function App() {
 
@@ -9,14 +10,31 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [editing, setEditing] = useState(false);
   const [id, setId] = useState("");
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const result = await getCollection("tasks");
+    })();
+  }, []);
+
+  const validForm = () => {
+    let isValid = true;
+    setError(null);
+    if (isEmpty(task)) {
+      setError("Debes Ingresar una tarea")
+      isValid = false;
+    }
+    return isValid;
+  }
 
 
   const addTask = (e) => {
     e.preventDefault();
-    if (isEmpty(task)) {
-      console.log("vacio");
-      return;
-    }
+  
+      if(!validForm()) {
+        return
+      }
 
     const newTask = {
       id: shortid.generate(),
@@ -30,13 +48,12 @@ function App() {
 
 const saveTask = (e) => {
     e.preventDefault();
-    const newTasks = tasks.map((task) => {
-      if (task.id === id) {
-        task.name = task;
-      }
-      return task;
-    });
 
+    if(!validForm()) {
+      return
+    }
+
+    
     const editedTask = tasks.map(item => item.id === id ? { id, name: task} : item)
     setTasks(editedTask);
     setEditing(false);
@@ -58,13 +75,13 @@ const saveTask = (e) => {
 
   return (
     <div className="container mt-5">
-      <h1 className="text-center custom-title">Tareas</h1>
+      <h1 className="custom-title mb-20">Tareas</h1>
       <hr />
       <div className="row">
         <div className="col-8">
           <h4 className="text-center"> Lista de Tareas </h4>
           {tasks.length === 0 ? (
-            <h5 className="text-center">No hay Tareas</h5>
+            <li className="list-group-item">No hay Tareas</li>
           ) : (
             <ul className="list-group">
               {tasks.map((task) => (
@@ -101,6 +118,12 @@ const saveTask = (e) => {
               onChange={(e) => setTask(e.target.value)}
               value={task}
             />
+
+             { error && (
+              <span className="text-danger mb-5 mt-5">{error}</span>
+            )
+              }
+
             <button className="btn btn-primary btn-block" type="submit">
              {editing ? "Editar" : "Agregar"}
             </button>
