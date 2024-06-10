@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { isEmpty } from "lodash";
-import shortid from "shortid";
 import  "./css/style.tasks.css"
-import { getCollection } from "./actions";
+import { getCollection, updateDocument, addDocument, deletedDocument } from "./actions";
 
 function App() {
 
@@ -12,11 +11,15 @@ function App() {
   const [id, setId] = useState("");
   const [error, setError] = useState(null);
 
+
   useEffect(() => {
     (async () => {
-      const result = await getCollection("tasks");
-    })();
-  }, []);
+      const result = await getCollection("tasks")
+      if (result.statusResponse) {
+        setTasks(result.data)
+      }
+    })()
+  }, [])
 
   const validForm = () => {
     let isValid = true;
@@ -29,31 +32,36 @@ function App() {
   }
 
 
-  const addTask = (e) => {
+  const addTask = async (e) => {
     e.preventDefault();
   
       if(!validForm()) {
         return
       }
 
-    const newTask = {
-      id: shortid.generate(),
-      name: task
-    }
+      const result = await addDocument("tasks", { name: task })
+      if(!result.statusResponse) {
+        setError(result.error)
+        return
+      }
 
-    setTasks([...tasks, newTask]);
-
+    setTasks([...tasks, {id: result.data.id, name: task}]);
     setTask("");
   }
 
-const saveTask = (e) => {
+const saveTask = async (e) => {
     e.preventDefault();
 
     if(!validForm()) {
       return
     }
 
-    
+    const result = await updateDocument("tasks", id, {name: task});
+    if(!result.statusResponse) {
+      setError(result.error)
+      return
+    }
+
     const editedTask = tasks.map(item => item.id === id ? { id, name: task} : item)
     setTasks(editedTask);
     setEditing(false);
@@ -61,7 +69,16 @@ const saveTask = (e) => {
     setId("");
   }
   
-  const deletetasks = (id) => {
+  const deletetasks = async (id) => {
+    const confirm = window.confirm("¿Estas seguro que quieres eliminar esta tarea?");
+    if(!confirm) {
+      return;
+    }
+    const result = await deletedDocument("tasks", id);
+    if(!result.statusResponse) {
+      setError(result.error)
+      return
+    }
     const newTasks = tasks.filter((task) => task.id !== id);
     setTasks(newTasks);
   }
